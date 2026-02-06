@@ -67,6 +67,10 @@ class Order
 
     public function markFailed(): void
     {
+        if ($this->status !== OrderStatus::PROCESSING) {
+            throw new InvalidOrderStateException();
+        }
+
         $this->status = OrderStatus::FAILED;
     }
 

@@ -4,6 +4,7 @@ namespace App\Infrastructure\Repository;
 
 use App\Domain\Entity\Order;
 use App\Domain\Repository\OrderRepository;
+use App\Domain\Exception\OrderNotFoundException;
 
 class InMemoryOrderRepository implements OrderRepository
 {
@@ -14,8 +15,12 @@ class InMemoryOrderRepository implements OrderRepository
         $this->orders[$order->getId()] = $order;
     }
 
-    public function findById(string $id): ?Order
+    public function findById(string $id): Order
     {
-        return $this->orders[$id] ?? null;
+        if (!isset($this->orders[$id])) {
+            throw new OrderNotFoundException();
+        }
+
+        return $this->orders[$id];
     }
 }
