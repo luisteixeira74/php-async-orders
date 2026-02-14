@@ -13,7 +13,7 @@ class CreateOrderUseCase
         private QueuePublisher $queuePublisher
     ) {}
 
-    public function execute(int $customerId, float $total): string
+    public function execute(int $customerId, float $total): Order
     {
         $orderId = uniqid('order_', true);
 
@@ -29,6 +29,6 @@ class CreateOrderUseCase
             'order_id' => $orderId
         ]);
 
-        return $orderId;
+        return $order;
     }
 }
