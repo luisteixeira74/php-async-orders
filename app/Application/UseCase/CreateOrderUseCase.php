@@ -17,8 +17,7 @@ class CreateOrderUseCase
     {
         $orderId = uniqid('order_', true);
 
-        $order = new Order(
-            id: $orderId,
+        $order = Order::create(
             customerId: $customerId,
             total: $total
         );

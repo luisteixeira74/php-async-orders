@@ -15,12 +15,8 @@ class InMemoryOrderRepository implements OrderRepository
         $this->orders[$order->getId()] = $order;
     }
 
-    public function findById(string $id): Order
+    public function findById(string $id): ?Order
     {
-        if (!isset($this->orders[$id])) {
-            throw new OrderNotFoundException();
-        }
-
-        return $this->orders[$id];
+        return $this->orders[$id] ?? null;
     }
 }

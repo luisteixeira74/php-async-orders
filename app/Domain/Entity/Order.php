@@ -14,13 +14,45 @@ class Order
     private OrderStatus $status;
     private DateTimeImmutable $createdAt;
 
-    public function __construct(string $id, int $customerId, float $total)
-    {
+    private function __construct(
+        string $id,
+        int $customerId,
+        float $total,
+        OrderStatus $status = OrderStatus::RECEIVED,
+        ?DateTimeImmutable $createdAt = null
+    ) {
         $this->id = $id;
         $this->customerId = $customerId;
         $this->total = $total;
-        $this->status = OrderStatus::RECEIVED;
-        $this->createdAt = new DateTimeImmutable();
+        $this->status = $status;
+        $this->createdAt = $createdAt ?? new DateTimeImmutable();
+    }
+
+    public static function create(int $customerId, float $total): self
+    {
+        return new self(
+            id: self::generateId(),
+            customerId: $customerId,
+            total: $total,
+            status: OrderStatus::RECEIVED,
+            createdAt: new DateTimeImmutable()
+        );
+    }
+
+    public static function rehydrate(
+        string $id,
+        int $customerId,
+        float $total,
+        OrderStatus $status,
+        DateTimeImmutable $createdAt
+    ): self {
+        return new self(
+            id: $id,
+            customerId: $customerId,
+            total: $total,
+            status: $status,
+            createdAt: $createdAt
+        );
     }
 
     public function getId(): string
@@ -41,6 +73,11 @@ class Order
     public function getStatus(): OrderStatus
     {
         return $this->status;
+    }
+
+    public function getCreatedAt(): DateTimeImmutable
+    {
+        return $this->createdAt;
     }
 
     public function markProcessing(): void
@@ -72,15 +109,6 @@ class Order
         }
 
         $this->status = OrderStatus::FAILED;
-    }
-
-    public static function create(int $customerId, float $total): self
-    {
-        return new self(
-            id: self::generateId(),
-            customerId: $customerId,
-            total: $total
-        );
     }
 
     private static function generateId(): string
