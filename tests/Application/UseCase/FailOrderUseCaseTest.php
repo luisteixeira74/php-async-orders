@@ -4,7 +4,7 @@ namespace Tests\Application\UseCase;
 
 use PHPUnit\Framework\TestCase;
 use App\Application\UseCase\FailOrderUseCase;
-use App\Infrastructure\Repository\InMemoryOrderRepository;
+use App\Infrastructure\Persistence\InMemoryOrderRepository;
 use App\Domain\Exception\OrderNotFoundException;
 use App\Domain\Exception\InvalidOrderStateException;
 use App\Domain\Entity\Order;

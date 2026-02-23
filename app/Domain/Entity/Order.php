@@ -5,6 +5,7 @@ namespace App\Domain\Entity;
 use App\Domain\Enum\OrderStatus;
 use App\Domain\Exception\InvalidOrderStateException;
 use DateTimeImmutable;
+use Ramsey\Uuid\Uuid;
 
 class Order
 {
@@ -113,6 +114,6 @@ class Order
 
     private static function generateId(): string
     {
-        return uniqid('order_', true);
+        return Uuid::uuid7()->toString();
     }
 }

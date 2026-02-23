@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Infrastructure\Repository;
+namespace App\Infrastructure\Persistence;
 
 use App\Domain\Entity\Order;
 use App\Domain\Enum\OrderStatus;
+use App\Domain\Exception\OrderNotFoundException;
 use App\Domain\Repository\OrderRepository;
 use DateTimeImmutable;
 use PDO;
@@ -34,7 +35,7 @@ class PDOOrderRepository implements OrderRepository
         ]);
     }
 
-    public function findById(string $id): ?Order
+    public function findById(string $id): Order
     {
         $stmt = $this->pdo->prepare(
             "SELECT id, customer_id, total, status
@@ -47,7 +48,7 @@ class PDOOrderRepository implements OrderRepository
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$data) {
-            return null; // respeita contrato da interface
+            throw new OrderNotFoundException("Order {$id} not found");
         }
 
         return Order::rehydrate(

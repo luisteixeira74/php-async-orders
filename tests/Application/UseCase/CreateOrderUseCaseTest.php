@@ -4,8 +4,8 @@ namespace Tests\Application\UseCase;
 
 use PHPUnit\Framework\TestCase;
 use App\Application\UseCase\CreateOrderUseCase;
-use App\Infrastructure\Repository\InMemoryOrderRepository;
-use App\Infrastructure\Queue\InMemoryQueuePublisher;
+use App\Infrastructure\Persistence\InMemoryOrderRepository;
+use App\Infrastructure\Messaging\InMemoryQueuePublisher;
 use App\Domain\Enum\OrderStatus;
 
 class CreateOrderUseCaseTest extends TestCase

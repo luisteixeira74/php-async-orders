@@ -2,9 +2,8 @@
 
 namespace App\Application\UseCase;
 
-use App\Domain\Exception\OrderNotFoundException;
 use App\Domain\Repository\OrderRepository;
-
+use App\Domain\Exception\OrderNotFoundException;
 class ProcessOrderUseCase
 {
     public function __construct(
@@ -16,10 +15,11 @@ class ProcessOrderUseCase
         $order = $this->orderRepository->findById($orderId);
 
         if (!$order) {
-            throw new OrderNotFoundException("Order {$orderId} not found");
+            throw new OrderNotFoundException();
         }
 
         $order->markProcessing();
+        $order->markProcessed();
 
         $this->orderRepository->save($order);
     }

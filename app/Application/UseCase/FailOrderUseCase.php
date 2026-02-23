@@ -2,6 +2,7 @@
 
 namespace App\Application\UseCase;
 
+use App\Domain\Exception\OrderNotFoundException;
 use App\Domain\Repository\OrderRepository;
 
 final class FailOrderUseCase
@@ -13,6 +14,10 @@ final class FailOrderUseCase
     public function execute(string $orderId): void
     {
         $order = $this->repository->findById($orderId);
+
+        if (!$order) {
+            throw new OrderNotFoundException();
+        }
 
         $order->markFailed();
 

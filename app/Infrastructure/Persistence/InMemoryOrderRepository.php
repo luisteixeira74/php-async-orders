@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Infrastructure\Repository;
+namespace App\Infrastructure\Persistence;
 
 use App\Domain\Entity\Order;
 use App\Domain\Repository\OrderRepository;
-use App\Domain\Exception\OrderNotFoundException;
 
 class InMemoryOrderRepository implements OrderRepository
 {

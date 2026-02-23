@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use App\Application\UseCase\ProcessOrderUseCase;
 use App\Domain\Entity\Order;
 use App\Domain\Enum\OrderStatus;
-use App\Infrastructure\Repository\InMemoryOrderRepository;
+use App\Infrastructure\Persistence\InMemoryOrderRepository;
 
 class ProcessOrderUseCaseTest extends TestCase
 {
@@ -31,7 +31,7 @@ class ProcessOrderUseCaseTest extends TestCase
         $processedOrder = $orderRepository->findById($order->getId());
 
         $this->assertEquals(
-            OrderStatus::PROCESSING,
+            OrderStatus::PROCESSED,
             $processedOrder->getStatus()
         );
     }

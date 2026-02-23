@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Infrastructure\Queue;
+namespace App\Infrastructure\Messaging;
 
 interface QueuePublisher
 {

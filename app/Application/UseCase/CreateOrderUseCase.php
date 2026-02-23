@@ -4,7 +4,7 @@ namespace App\Application\UseCase;
 
 use App\Domain\Entity\Order;
 use App\Domain\Repository\OrderRepository;
-use App\Infrastructure\Queue\QueuePublisher;
+use App\Infrastructure\Messaging\QueuePublisher;
 
 class CreateOrderUseCase
 {
@@ -13,10 +13,8 @@ class CreateOrderUseCase
         private QueuePublisher $queuePublisher
     ) {}
 
-    public function execute(int $customerId, float $total): Order
+    public function execute(int $customerId, float $total): string
     {
-        $orderId = uniqid('order_', true);
-
         $order = Order::create(
             customerId: $customerId,
             total: $total
@@ -25,9 +23,9 @@ class CreateOrderUseCase
         $this->orderRepository->save($order);
 
         $this->queuePublisher->publish('orders.created', [
-            'order_id' => $orderId
+            'order_id' => $order->getId()
         ]);
 
-        return $order;
+        return $order->getId();
     }
 }
