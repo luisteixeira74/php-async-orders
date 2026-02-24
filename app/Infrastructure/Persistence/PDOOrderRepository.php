@@ -18,13 +18,13 @@ class PDOOrderRepository implements OrderRepository
     public function save(Order $order): void
     {
         $stmt = $this->pdo->prepare(
-            "INSERT INTO orders (id, customer_id, total, status)
-             VALUES (:id, :customer_id, :total, :status)
+            "INSERT INTO orders (id, customer_id, total, status, created_at)
+             VALUES (:id, :customer_id, :total, :status, :created_at)
              ON CONFLICT (id)
              DO UPDATE SET
-                 customer_id = :customer_id,
-                 total = :total,
-                 status = :status"
+                 customer_id = EXCLUDED.customer_id,
+                 total       = EXCLUDED.total,
+                 status      = EXCLUDED.status"
         );
 
         $stmt->execute([
@@ -32,13 +32,14 @@ class PDOOrderRepository implements OrderRepository
             ':customer_id' => $order->getCustomerId(),
             ':total'       => $order->getTotal(),
             ':status'      => $order->getStatus()->value,
+            ':created_at'  => $order->getCreatedAt()->format('Y-m-d H:i:s'),
         ]);
     }
 
     public function findById(string $id): Order
     {
         $stmt = $this->pdo->prepare(
-            "SELECT id, customer_id, total, status
+            "SELECT id, customer_id, total, status, created_at
              FROM orders
              WHERE id = :id"
         );
