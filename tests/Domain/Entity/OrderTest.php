@@ -63,6 +63,17 @@ class OrderTest extends TestCase
 
         $order->markProcessing();
     }
+    
+    public function testProcessedOrderCannotChangeState(): void
+    {
+        $order = Order::create(1, 100.0);
+        $order->markProcessing();
+        $order->markProcessed();
+
+        $this->expectException(InvalidOrderStateException::class);
+
+        $order->markFailed();
+    }
 
     public function testItCannotMarkProcessedIfNotProcessing(): void
     {

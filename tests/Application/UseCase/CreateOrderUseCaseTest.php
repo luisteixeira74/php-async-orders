@@ -43,4 +43,20 @@ class CreateOrderUseCaseTest extends TestCase
         $this->assertEquals('orders.created', $message['topic']);
         $this->assertEquals($orderId, $message['payload']['order_id']);
     }
+    
+    public function test_multiple_orders_generate_unique_ids(): void
+    {
+        $orderRepository = new InMemoryOrderRepository();
+        $queuePublisher  = new InMemoryQueuePublisher();
+
+        $useCase = new CreateOrderUseCase(
+            $orderRepository,
+            $queuePublisher
+        );
+
+        $id1 = $useCase->execute(1, 100.0);
+        $id2 = $useCase->execute(2, 200.0);
+
+        $this->assertNotEquals($id1, $id2);
+    }
 }

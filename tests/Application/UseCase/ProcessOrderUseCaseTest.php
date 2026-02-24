@@ -6,13 +6,13 @@ use PHPUnit\Framework\TestCase;
 use App\Application\UseCase\ProcessOrderUseCase;
 use App\Domain\Entity\Order;
 use App\Domain\Enum\OrderStatus;
+use App\Domain\Exception\OrderNotFoundException;
 use App\Infrastructure\Persistence\InMemoryOrderRepository;
 
 class ProcessOrderUseCaseTest extends TestCase
 {
     public function test_it_processes_an_existing_order(): void
     {
-        // Arrange
         $orderRepository = new InMemoryOrderRepository();
 
         $order = Order::create(
@@ -24,15 +24,24 @@ class ProcessOrderUseCaseTest extends TestCase
 
         $useCase = new ProcessOrderUseCase($orderRepository);
 
-        // Act
         $useCase->execute($order->getId());
 
-        // Assert
         $processedOrder = $orderRepository->findById($order->getId());
 
         $this->assertEquals(
             OrderStatus::PROCESSED,
             $processedOrder->getStatus()
         );
+    }
+
+    public function test_it_throws_exception_when_order_does_not_exist(): void
+    {
+        $orderRepository = new InMemoryOrderRepository();
+
+        $useCase = new ProcessOrderUseCase($orderRepository);
+
+        $this->expectException(OrderNotFoundException::class);
+
+        $useCase->execute('non-existing-id');
     }
 }
