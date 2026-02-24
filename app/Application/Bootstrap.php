@@ -2,16 +2,20 @@
 
 namespace App\Application;
 
+use App\Infrastructure\Persistence\PDOOrderRepository;
+use App\Infrastructure\Persistence\ConnectionFactory;
+
 use App\Application\UseCase\CreateOrderUseCase;
 use App\Application\UseCase\ProcessOrderUseCase;
-use App\Application\UseCase\FinalizeOrderUseCase;
 use App\Application\UseCase\FailOrderUseCase;
 
 use App\Domain\Repository\OrderRepository;
-use App\Infrastructure\Repository\InMemoryOrderRepository;
+use App\Infrastructure\Persistence\InMemoryOrderRepository;
 
-use App\Infrastructure\Queue\QueuePublisher;
-use App\Infrastructure\Queue\InMemoryQueuePublisher;
+use App\Infrastructure\Messaging\QueuePublisher;
+use App\Infrastructure\Messaging\InMemoryQueuePublisher;
+
+use Dotenv\Dotenv;
 
 class Bootstrap
 {
@@ -25,13 +29,18 @@ class Bootstrap
 
     private function initialize(): void
     {
+        $root = dirname(__DIR__, 2);
+
+        if (file_exists($root . '/.env')) {
+            $dotenv = Dotenv::createImmutable($root);
+            $dotenv->load();
+        }
+
         switch ($this->environment) {
             case 'prod':
-                // $this->orderRepository = new PdoOrderRepository($pdo);
-                // $this->queuePublisher = new RabbitMQPublisher(...);
-
-                // Temporário enquanto infra real não existe:
-                $this->orderRepository = new InMemoryOrderRepository();
+                $pdo = ConnectionFactory::create();
+                $this->orderRepository = new PDOOrderRepository($pdo);
+                // ainda pode manter queue fake até ter mensageria real
                 $this->queuePublisher  = new InMemoryQueuePublisher();
                 break;
 
@@ -53,13 +62,6 @@ class Bootstrap
     public function processOrderUseCase(): ProcessOrderUseCase
     {
         return new ProcessOrderUseCase(
-            $this->orderRepository
-        );
-    }
-
-    public function finalizeOrderUseCase(): FinalizeOrderUseCase
-    {
-        return new FinalizeOrderUseCase(
             $this->orderRepository
         );
     }

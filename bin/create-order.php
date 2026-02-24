@@ -19,10 +19,10 @@ $bootstrap = new Bootstrap($environment);
 $useCase   = $bootstrap->createOrderUseCase();
 
 try {
-    $order = $useCase->execute($customerId, $value);
+    $orderId = $useCase->execute($customerId, $value);
 
     echo "Order created successfully.\n";
-    echo "Order ID: {$order->getId()}\n";
+    echo "Order ID: {$orderId}\n";
     echo "Environment: {$environment}\n";
 
 } catch (\Throwable $e) {
