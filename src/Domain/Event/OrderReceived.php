@@ -34,4 +34,9 @@ final class OrderReceived implements DomainEvent
             'order_id' => $this->orderId,
         ];
     }
+
+    public function eventName(): string
+    {
+        return 'orders.received';
+    }
 }

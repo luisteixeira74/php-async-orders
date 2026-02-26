@@ -8,6 +8,8 @@ use App\Domain\Enum\OrderStatus;
 use App\Infrastructure\Messaging\InMemoryQueuePublisher;
 use App\Infrastructure\Persistence\InMemoryOrderRepository;
 use PHPUnit\Framework\TestCase;
+use App\Application\Listener\PublishOrderToQueueListener;
+use App\Domain\Event\OrderReceived;
 
 class CreateOrderUseCaseTest extends TestCase
 {
@@ -18,6 +20,10 @@ class CreateOrderUseCaseTest extends TestCase
         $queuePublisher = new InMemoryQueuePublisher();
         
         $eventDispatcher  = new SimpleEventDispatcher();
+        $eventDispatcher->listen(
+            OrderReceived::class,
+            new PublishOrderToQueueListener($queuePublisher)
+        );
 
         $useCase = new CreateOrderUseCase(
             $orderRepository,
@@ -43,7 +49,7 @@ class CreateOrderUseCaseTest extends TestCase
 
         $message = $queuePublisher->messages[0];
 
-        $this->assertEquals('orders.created', $message['topic']);
+        $this->assertEquals('orders.received', $message['topic']);
         $this->assertEquals($orderId, $message['payload']['order_id']);
     }
     

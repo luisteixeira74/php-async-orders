@@ -7,4 +7,5 @@ namespace App\Domain\Event;
 interface DomainEvent
 {
     public function occurredOn(): \DateTimeImmutable;
+    public function eventName(): string;
 }
