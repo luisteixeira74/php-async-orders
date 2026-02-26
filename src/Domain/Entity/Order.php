@@ -6,6 +6,8 @@ use App\Domain\Enum\OrderStatus;
 use App\Domain\Exception\InvalidOrderStateException;
 use DateTimeImmutable;
 use Ramsey\Uuid\Uuid;
+use App\Domain\Event\DomainEvent;
+use App\Domain\Event\OrderReceived;
 
 class Order
 {
@@ -14,6 +16,7 @@ class Order
     private float $total;
     private OrderStatus $status;
     private DateTimeImmutable $createdAt;
+    private array $domainEvents = [];
 
     private function __construct(
         string $id,
@@ -31,13 +34,23 @@ class Order
 
     public static function create(int $customerId, float $total): self
     {
-        return new self(
+        $order = new self(
             id: self::generateId(),
             customerId: $customerId,
             total: $total,
             status: OrderStatus::RECEIVED,
             createdAt: new DateTimeImmutable()
         );
+
+        $order->recordEvent(
+            new OrderReceived(
+                orderId: $order->getId(),
+                customerId: $order->getCustomerId(),
+                total: $order->getTotal()
+            )
+        );
+
+        return $order;
     }
 
     public static function rehydrate(
@@ -115,5 +128,18 @@ class Order
     private static function generateId(): string
     {
         return Uuid::uuid7()->toString();
+    }
+
+    public function pullDomainEvents(): array
+    {
+        $events = $this->domainEvents;
+        $this->domainEvents = [];
+
+        return $events;
+    }
+
+    private function recordEvent(DomainEvent $event): void
+    {
+        $this->domainEvents[] = $event;
     }
 }

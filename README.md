@@ -49,6 +49,21 @@ fonte da verdade para transições válidas dentro do domínio.
 
 vendor/bin/phpunit tests --testdox
 
+## 🐳 Executando com Docker (PostgreSQL)
+
+- Para rodar o projeto com banco real:
+  - docker compose up -d
+
+- Após subir os containers, execute as migrations:
+  - docker exec -it php-async-orders-app php bin/migrate.php
+
+- Criar um pedido via CLI:
+- docker exec -it php-async-orders-app php bin/create-order.php 1 99.90
+
+O banco utilizado é PostgreSQL, configurado via .env.
+
+---
+
 ## 🚧 Próximos passos
 
 - Worker assíncrono
@@ -57,4 +72,5 @@ vendor/bin/phpunit tests --testdox
 
 ## 🛠️ Roadmap
 
-Estado atual: domínio modelado, use cases principais implementados e testados.
+Estado atual: domínio modelado, use cases implementados,
+infra com PostgreSQL via Docker e migrations automatizadas.

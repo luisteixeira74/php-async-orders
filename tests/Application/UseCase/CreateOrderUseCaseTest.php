@@ -2,11 +2,12 @@
 
 namespace Tests\Application\UseCase;
 
-use PHPUnit\Framework\TestCase;
+use App\Application\Event\SimpleEventDispatcher;
 use App\Application\UseCase\CreateOrderUseCase;
-use App\Infrastructure\Persistence\InMemoryOrderRepository;
-use App\Infrastructure\Messaging\InMemoryQueuePublisher;
 use App\Domain\Enum\OrderStatus;
+use App\Infrastructure\Messaging\InMemoryQueuePublisher;
+use App\Infrastructure\Persistence\InMemoryOrderRepository;
+use PHPUnit\Framework\TestCase;
 
 class CreateOrderUseCaseTest extends TestCase
 {
@@ -14,11 +15,13 @@ class CreateOrderUseCaseTest extends TestCase
     {
         // Arrange
         $orderRepository = new InMemoryOrderRepository();
-        $queuePublisher  = new InMemoryQueuePublisher();
+        $queuePublisher = new InMemoryQueuePublisher();
+        
+        $eventDispatcher  = new SimpleEventDispatcher();
 
         $useCase = new CreateOrderUseCase(
             $orderRepository,
-            $queuePublisher
+            $eventDispatcher
         );
 
         // Act
@@ -47,11 +50,11 @@ class CreateOrderUseCaseTest extends TestCase
     public function test_multiple_orders_generate_unique_ids(): void
     {
         $orderRepository = new InMemoryOrderRepository();
-        $queuePublisher  = new InMemoryQueuePublisher();
+        $eventDispatcher  = new SimpleEventDispatcher();
 
         $useCase = new CreateOrderUseCase(
             $orderRepository,
-            $queuePublisher
+            $eventDispatcher
         );
 
         $id1 = $useCase->execute(1, 100.0);

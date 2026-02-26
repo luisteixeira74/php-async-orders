@@ -4,13 +4,13 @@ namespace App\Application\UseCase;
 
 use App\Domain\Entity\Order;
 use App\Domain\Repository\OrderRepository;
-use App\Infrastructure\Messaging\QueuePublisher;
+use App\Application\Event\EventDispatcherInterface;
 
 class CreateOrderUseCase
 {
     public function __construct(
         private OrderRepository $orderRepository,
-        private QueuePublisher $queuePublisher
+        private EventDispatcherInterface $eventDispatcher
     ) {}
 
     public function execute(int $customerId, float $total): string
@@ -22,9 +22,9 @@ class CreateOrderUseCase
 
         $this->orderRepository->save($order);
 
-        $this->queuePublisher->publish('orders.created', [
-            'order_id' => $order->getId()
-        ]);
+        foreach ($order->pullDomainEvents() as $event) {
+            $this->eventDispatcher->dispatch($event);
+        }
 
         return $order->getId();
     }

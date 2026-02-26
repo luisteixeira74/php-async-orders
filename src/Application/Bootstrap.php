@@ -2,14 +2,21 @@
 
 namespace App\Application;
 
-use App\Infrastructure\Persistence\PDOOrderRepository;
-use App\Infrastructure\Persistence\ConnectionFactory;
+use App\Application\Event\EventDispatcherInterface;
+use App\Application\Event\SimpleEventDispatcher;
+
+use App\Application\Listener\PublishOrderToQueueListener;
+
+use App\Domain\Event\OrderReceived;
 
 use App\Application\UseCase\CreateOrderUseCase;
 use App\Application\UseCase\ProcessOrderUseCase;
 use App\Application\UseCase\FailOrderUseCase;
 
 use App\Domain\Repository\OrderRepository;
+
+use App\Infrastructure\Persistence\PDOOrderRepository;
+use App\Infrastructure\Persistence\ConnectionFactory;
 use App\Infrastructure\Persistence\InMemoryOrderRepository;
 
 use App\Infrastructure\Messaging\QueuePublisher;
@@ -21,6 +28,7 @@ class Bootstrap
 {
     private OrderRepository $orderRepository;
     private QueuePublisher $queuePublisher;
+    private EventDispatcherInterface $eventDispatcher;
 
     public function __construct(private string $environment = 'dev')
     {
@@ -40,7 +48,6 @@ class Bootstrap
             case 'prod':
                 $pdo = ConnectionFactory::create();
                 $this->orderRepository = new PDOOrderRepository($pdo);
-                // ainda pode manter queue fake até ter mensageria real
                 $this->queuePublisher  = new InMemoryQueuePublisher();
                 break;
 
@@ -49,13 +56,27 @@ class Bootstrap
                 $this->orderRepository = new InMemoryOrderRepository();
                 $this->queuePublisher  = new InMemoryQueuePublisher();
         }
+
+        $this->initializeEventDispatcher();
+    }
+
+    private function initializeEventDispatcher(): void
+    {
+        $dispatcher = new SimpleEventDispatcher();
+
+        $dispatcher->listen(
+            OrderReceived::class,
+            new PublishOrderToQueueListener($this->queuePublisher)
+        );
+
+        $this->eventDispatcher = $dispatcher;
     }
 
     public function createOrderUseCase(): CreateOrderUseCase
     {
         return new CreateOrderUseCase(
             $this->orderRepository,
-            $this->queuePublisher
+            $this->eventDispatcher
         );
     }
 
