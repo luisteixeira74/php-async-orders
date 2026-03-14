@@ -22,9 +22,9 @@ class ProcessOrderUseCaseTest extends TestCase
         );
 
         $orderRepository->save($order);
-        $eventDispatcher = new SimpleEventDispatcher();
+        $dispatcher = new SimpleEventDispatcher();
 
-        $useCase = new ProcessOrderUseCase($orderRepository, $eventDispatcher);
+        $useCase = new ProcessOrderUseCase($orderRepository, $dispatcher);
 
         $useCase->execute($order->getId());
 
@@ -39,9 +39,9 @@ class ProcessOrderUseCaseTest extends TestCase
     public function test_it_throws_exception_when_order_does_not_exist(): void
     {
         $orderRepository = new InMemoryOrderRepository();
-        $eventDispatcher = new SimpleEventDispatcher();
+        $dispatcher = new SimpleEventDispatcher();
 
-        $useCase = new ProcessOrderUseCase($orderRepository, $eventDispatcher);
+        $useCase = new ProcessOrderUseCase($orderRepository, $dispatcher);
 
         $this->expectException(OrderNotFoundException::class);
 
