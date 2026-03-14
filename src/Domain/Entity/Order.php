@@ -7,6 +7,7 @@ use App\Domain\Exception\InvalidOrderStateException;
 use DateTimeImmutable;
 use Ramsey\Uuid\Uuid;
 use App\Domain\Event\DomainEvent;
+use App\Domain\Event\OrderProcessed;
 use App\Domain\Event\OrderReceived;
 
 class Order
@@ -114,6 +115,14 @@ class Order
         }
 
         $this->status = OrderStatus::PROCESSED;
+
+        $this->recordEvent(
+            new OrderProcessed(
+                orderId: $this->getId(),
+                customerId: $this->getCustomerId(),
+                total: $this->getTotal()
+            )
+        );
     }
 
     public function markFailed(): void

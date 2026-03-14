@@ -23,12 +23,42 @@ não sendo um CRUD tradicional.
 
 Dependências sempre apontam para dentro (Domain não conhece Application nem Infrastructure).
 
+### Arquitetura em Alto Nivel
+
+Client
+↓
+UseCase (Application)
+↓
+Domain Entity
+↓
+Domain Event
+↓
+Event Dispatcher
+↓
+Listener
+↓
+Queue Publisher
+↓
+Message Queue
+↓
+Projection Consumer
+↓
+Read Model
+
 ## 🔄 Fluxo do Pedido
 
 RECEIVED → PROCESSING → PROCESSED / FAILED
 
 Os estados do pedido são controlados por um **Enum (`OrderStatus`)**, que funciona como
 fonte da verdade para transições válidas dentro do domínio.
+
+## 🐳 Executando o Projeto (Docker)
+
+docker compose up -d
+
+docker compose exec app php bin/migrate.php
+
+docker compose exec app php bin/create-order.php 1 99.90
 
 ---
 
@@ -48,19 +78,6 @@ fonte da verdade para transições válidas dentro do domínio.
 ## ▶️ Como rodar os testes
 
 vendor/bin/phpunit tests --testdox
-
-## 🐳 Executando com Docker (PostgreSQL)
-
-- Para rodar o projeto com banco real:
-  - docker compose up -d
-
-- Após subir os containers, execute as migrations:
-  - docker exec -it php-async-orders-app php bin/migrate.php
-
-- Criar um pedido via CLI:
-- docker exec -it php-async-orders-app php bin/create-order.php 1 99.90
-
-O banco utilizado é PostgreSQL, configurado via .env.
 
 ---
 

@@ -1,12 +1,10 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Domain\Event;
 
 use DateTimeImmutable;
 
-final class OrderReceived implements DomainEvent
+final class OrderProcessed implements DomainEvent
 {
     private DateTimeImmutable $occurredOn;
 
@@ -23,9 +21,9 @@ final class OrderReceived implements DomainEvent
         return $this->occurredOn;
     }
 
-    public function getOrderId(): string
+    public function eventName(): string
     {
-        return $this->orderId;
+        return 'orders.processed';
     }
 
     public function toArray(): array
@@ -34,11 +32,7 @@ final class OrderReceived implements DomainEvent
             'order_id' => $this->orderId,
             'customer_id' => $this->customerId,
             'total' => $this->total,
+            'occurred_on' => $this->occurredOn->format(DATE_ATOM),
         ];
-    }
-
-    public function eventName(): string
-    {
-        return 'orders.received';
     }
 }
