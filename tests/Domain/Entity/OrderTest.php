@@ -24,7 +24,7 @@ class OrderTest extends TestCase
         $this->assertNotNull($order->getCreatedAt());
     }
 
-    public function testItTransitionsFromReceivedToProcessing(): void
+    public function test_order_moves_from_received_to_processing(): void
     {
         $order = Order::create(1, 100.0);
 
@@ -33,7 +33,7 @@ class OrderTest extends TestCase
         $this->assertEquals(OrderStatus::PROCESSING, $order->getStatus());
     }
 
-    public function testItTransitionsFromProcessingToProcessed(): void
+    public function test_order_moves_from_received_to_processing_to_processed(): void
     {
         $order = Order::create(1, 100.0);
         $order->markProcessing();
