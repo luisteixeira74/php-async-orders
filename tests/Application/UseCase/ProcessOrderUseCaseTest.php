@@ -8,6 +8,7 @@ use App\Domain\Entity\Order;
 use App\Domain\Enum\OrderStatus;
 use App\Domain\Exception\OrderNotFoundException;
 use App\Infrastructure\Persistence\InMemoryOrderRepository;
+use App\Application\Event\SimpleEventDispatcher;
 
 class ProcessOrderUseCaseTest extends TestCase
 {
@@ -21,8 +22,9 @@ class ProcessOrderUseCaseTest extends TestCase
         );
 
         $orderRepository->save($order);
+        $eventDispatcher = new SimpleEventDispatcher();
 
-        $useCase = new ProcessOrderUseCase($orderRepository);
+        $useCase = new ProcessOrderUseCase($orderRepository, $eventDispatcher);
 
         $useCase->execute($order->getId());
 
@@ -37,8 +39,9 @@ class ProcessOrderUseCaseTest extends TestCase
     public function test_it_throws_exception_when_order_does_not_exist(): void
     {
         $orderRepository = new InMemoryOrderRepository();
+        $eventDispatcher = new SimpleEventDispatcher();
 
-        $useCase = new ProcessOrderUseCase($orderRepository);
+        $useCase = new ProcessOrderUseCase($orderRepository, $eventDispatcher);
 
         $this->expectException(OrderNotFoundException::class);
 

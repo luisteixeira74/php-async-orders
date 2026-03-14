@@ -17,7 +17,7 @@ class OrderFlowTest extends TestCase
         $dispatcher = new SimpleEventDispatcher();
 
         $create = new CreateOrderUseCase($repository, $dispatcher);
-        $process = new ProcessOrderUseCase($repository);
+        $process = new ProcessOrderUseCase($repository, $dispatcher);
 
         $orderId = $create->execute(customerId: 1, total: 500.0);
 
