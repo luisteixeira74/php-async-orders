@@ -61,9 +61,15 @@
 
 <script>
 function getSteps(status) {
-    const steps = ['received', 'processing', 'shipped', 'delivered'];
+    const steps = ['received', 'processing', 'delivered'];
 
-    const currentIndex = steps.indexOf(status);
+    const labels = {
+        received: 'Received',
+        processing: 'Processing',
+        delivered: 'Delivered'
+    };
+
+    const currentIndex = statusMap[status] ?? 0;
 
     return steps.map((step, index) => {
         let className = 'step pending';
@@ -72,7 +78,7 @@ function getSteps(status) {
             className = 'step active';
         }
 
-        return `<div class="${className}">${step}</div>`;
+        return `<div class="${className}">${labels[step]}</div>`;
     }).join('');
 }
 

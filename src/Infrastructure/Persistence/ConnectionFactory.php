@@ -8,21 +8,24 @@ class ConnectionFactory
 {
     public static function create(): PDO
     {
-        $dsn = sprintf(
-            '%s:host=%s;port=%s;dbname=%s',
-            $_ENV['DB_DRIVER'],
-            $_ENV['DB_HOST'],
-            $_ENV['DB_PORT'],
-            $_ENV['DB_DATABASE']
-        );
+        $driver = getenv('DB_DRIVER') ?: 'pgsql';
+        $host   = getenv('DB_HOST') ?: 'postgres';
+        $port   = getenv('DB_PORT') ?: 5432;
+        $db     = getenv('DB_DATABASE') ?: 'async_orders';
+        $user   = getenv('DB_USERNAME') ?: 'postgres';
+        $pass   = getenv('DB_PASSWORD') ?: 'postgres';
+
+        $dsn = sprintf('%s:host=%s;port=%s;dbname=%s', $driver, $host, $port, $db);
 
         $pdo = new PDO(
             $dsn,
-            $_ENV['DB_USERNAME'],
-            $_ENV['DB_PASSWORD']
+            $user,
+            $pass,
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            ]
         );
-
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         return $pdo;
     }

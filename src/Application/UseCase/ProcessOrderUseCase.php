@@ -14,6 +14,9 @@ class ProcessOrderUseCase
         private EventDispatcherInterface $eventDispatcher
     ) {}
 
+    /**
+     * Processa uma order específica pelo ID
+     */
     public function execute(string $orderId): void
     {
         $order = $this->orderRepository->findById($orderId);
@@ -34,5 +37,16 @@ class ProcessOrderUseCase
                 total: $order->getTotal()
             )
         );
+    }
+
+    /**
+     * Retorna todas as orders pendentes (status ainda não processadas)
+     *
+     * @return array<int, \App\Domain\Entity\Order>
+     */
+    public function getPendingOrders(): array
+    {
+        // Delegamos para o repository buscar todas as orders com status "created"
+        return $this->orderRepository->findByStatus('received');
     }
 }

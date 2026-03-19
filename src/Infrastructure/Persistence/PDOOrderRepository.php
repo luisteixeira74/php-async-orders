@@ -60,4 +60,28 @@ class PDOOrderRepository implements OrderRepository
             new DateTimeImmutable($data['created_at'])
         );
     }
+
+    public function findByStatus(string $status): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT id, customer_id, total, status, created_at
+            FROM orders
+            WHERE status = :status"
+        );
+        $stmt->execute([':status' => $status]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $orders = [];
+        foreach ($rows as $data) {
+            $orders[] = Order::rehydrate(
+                $data['id'],
+                (int) $data['customer_id'],
+                (float) $data['total'],
+                OrderStatus::from($data['status']),
+                new \DateTimeImmutable($data['created_at'])
+            );
+        }
+
+        return $orders;
+    }
 }

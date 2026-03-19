@@ -29,29 +29,44 @@ class Bootstrap
 
     public function __construct(private string $environment = 'dev')
     {
-        $this->initialize();
+        $root = dirname(__DIR__, 2);
+        $dotenv = Dotenv::createMutable($root);
+        $dotenv->load();
+
+        $this->initialize(); // ⚡ inicializa orderRepository, queuePublisher e dispatcher
+    }
+
+    private function loadEnv(): void
+    {
+        // Caminho absoluto para a raiz do projeto
+        $root = dirname(__DIR__, 2);
+
+        if (!file_exists($root . '/.env')) {
+            throw new \RuntimeException("Arquivo .env não encontrado na raiz do projeto ($root)");
+        }
+
+        $dotenv = Dotenv::createImmutable($root);
+        $dotenv->load();
     }
 
     private function initialize(): void
     {
-        $root = dirname(__DIR__, 2);
+        echo "Inicializando aplicação no ambiente: {$this->environment}\n";
 
-        if (file_exists($root . '/.env')) {
-            $dotenv = Dotenv::createImmutable($root);
-            $dotenv->load();
-        }
-
+        // Inicializa Publisher
         $this->queuePublisher = new InMemoryQueuePublisher();
 
+        // Inicializa repositório
         if ($this->environment === 'prod') {
             $this->orderRepository = new PDOOrderRepository($this->getConnection());
         } else {
             $this->orderRepository = new InMemoryOrderRepository();
         }
 
+        // Inicializa Event Dispatcher
         $this->initializeEventDispatcher();
     }
-    
+
     private function initializeEventDispatcher(): void
     {
         $dispatcher = new SimpleEventDispatcher();
@@ -64,13 +79,18 @@ class Bootstrap
         $this->eventDispatcher = $dispatcher;
     }
 
-    private function getConnection(): \PDO
+    public function getConnection(): \PDO
     {
         if ($this->pdo === null) {
             $this->pdo = ConnectionFactory::create();
         }
 
         return $this->pdo;
+    }
+
+    public function orderRepository()
+    {
+        return $this->orderRepository;
     }
 
     public function createOrderUseCase(): CreateOrderUseCase
@@ -98,7 +118,7 @@ class Bootstrap
 
     public function updateOrderProjectionHandler(): UpdateOrderProjectionHandler
     {
-        $pdo = ConnectionFactory::create();
+        $pdo = $this->getConnection(); // Reutiliza a conexão
         $projectionRepository = new PDOOrderProjectionRepository($pdo);
         return new UpdateOrderProjectionHandler($projectionRepository);
     }

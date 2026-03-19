@@ -9,31 +9,37 @@ use App\Domain\Exception\InvalidOrderStateException;
 
 $environment = getenv('APP_ENV') ?: 'dev';
 
-if ($argc < 2) {
-    fwrite(STDERR, "Usage: php bin/process-order.php <orderId>\n");
-    exit(1);
-}
-
-$orderId = $argv[1];
-
 $bootstrap = new Bootstrap($environment);
 $useCase   = $bootstrap->processOrderUseCase();
 
-try {
-    $order = $useCase->execute($orderId);
+// Pega todos os orderIds passados como parâmetro
+$orderIds = array_slice($argv, 1);
 
-    echo "Order {$orderId} is now in PROCESSING state.\n";
-    echo "Environment: {$environment}\n";
+if (empty($orderIds)) {
+    echo "No orderId passed. Processing all pending orders...\n";
 
-} catch (OrderNotFoundException $e) {
-    fwrite(STDERR, "Order not found: {$orderId}\n");
-    exit(1);
+    // Busca todas as orders pendentes via UseCase
+    $pendingOrders = $useCase->getPendingOrders();
 
-} catch (InvalidOrderStateException $e) {
-    fwrite(STDERR, "Invalid order state transition.\n");
-    exit(1);
+    if (empty($pendingOrders)) {
+        echo "No pending orders found.\n";
+        exit(0);
+    }
 
-} catch (\Throwable $e) {
-    fwrite(STDERR, "Unexpected error: {$e->getMessage()}\n");
-    exit(1);
+    // Extrai os IDs das orders pendentes
+    $orderIds = array_map(fn($order) => $order->getId(), $pendingOrders);
+}
+
+foreach ($orderIds as $orderId) {
+    try {
+        $useCase->execute($orderId);
+        echo "Order {$orderId} is now in PROCESSING state.\n";
+        echo "Environment: {$environment}\n";
+    } catch (OrderNotFoundException $e) {
+        fwrite(STDERR, "Order not found: {$orderId}\n");
+    } catch (InvalidOrderStateException $e) {
+        fwrite(STDERR, "Invalid order state transition for order: {$orderId}\n");
+    } catch (\Throwable $e) {
+        fwrite(STDERR, "Unexpected error for order {$orderId}: {$e->getMessage()}\n");
+    }
 }

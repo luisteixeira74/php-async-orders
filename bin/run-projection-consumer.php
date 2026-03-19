@@ -9,22 +9,21 @@ use App\Application\Consumer\OrderProjectionConsumer;
 $environment = getenv('APP_ENV') ?: 'dev';
 
 echo "Starting projection consumer...\n";
+echo "Environment: {$environment}\n";
 
 $bootstrap = new Bootstrap($environment);
 
-$handler = $bootstrap->updateOrderProjectionHandler();
+$consumer = new OrderProjectionConsumer(
+    $bootstrap->updateOrderProjectionHandler(),
+    $bootstrap->orderRepository()
+);
 
-$consumer = new OrderProjectionConsumer($handler);
+try {
+    $consumer->consume();
 
-/**
- * Simulação de mensagem da fila
- */
-$event = [
-    'order_id' => 'example-order-id',
-    'customer_id' => 1,
-    'total' => 100.50
-];
+    echo "Projection updated successfully.\n";
 
-$consumer->consume($event);
-
-echo "Projection updated.\n";
+} catch (\Throwable $e) {
+    fwrite(STDERR, "Error while processing projection: {$e->getMessage()}\n");
+    exit(1);
+}
