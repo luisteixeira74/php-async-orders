@@ -1,5 +1,7 @@
 # php-async-orders
 
+![PHP CI](https://github.com/luisteixeira74luisteixeira74/php-async-orders/actions/workflows/php-ci.yml/badge.svg)
+
 ## 📌 Overview
 
 Projeto em PHP que modela o ciclo de vida de pedidos (order) com processamento assíncrono, aplicando Clean Architecture e princípios inspirados em DDD.
