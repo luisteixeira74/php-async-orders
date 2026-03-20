@@ -43,12 +43,17 @@ class Bootstrap
     {
         $root = dirname(__DIR__, 2);
 
-        if (!file_exists($root . '/.env')) {
-            throw new \RuntimeException("Arquivo .env não encontrado na raiz do projeto ($root)");
+        if (file_exists($root . '/.env')) {
+            $dotenv = Dotenv::createImmutable($root);
+            $dotenv->load();
+        } else {
+            // fallback inteligente
+            if ($this->environment === 'dev') {
+                throw new \RuntimeException("Arquivo .env não encontrado na raiz do projeto ($root)");
+            }
+            // Em CI ou prod, não temos .env → usar getenv() ou defaults
+            echo "[Bootstrap] .env não encontrado, usando variáveis do ambiente ou defaults\n";
         }
-
-        $dotenv = Dotenv::createImmutable($root);
-        $dotenv->load();
     }
 
     private function initialize(): void
@@ -58,13 +63,14 @@ class Bootstrap
         // Publisher
         $this->queuePublisher = new InMemoryQueuePublisher();
 
-        // Repositories
         if ($this->environment === 'prod') {
             $this->orderRepository = new PDOOrderRepository($this->getConnection());
             $this->orderEventRepository = new PDOOrderEventRepository($this->getConnection());
+            $this->queuePublisher = new QueuePublisher(); // real, tipo Redis
         } else {
             $this->orderRepository = new InMemoryOrderRepository();
             $this->orderEventRepository = new InMemoryOrderEventRepository();
+            $this->queuePublisher = new InMemoryQueuePublisher();
         }
 
         // Dispatcher (usa publisher → precisa vir depois)
