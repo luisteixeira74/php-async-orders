@@ -7,6 +7,7 @@ use PDO;
 use App\Application\Projection\UpdateOrderProjectionHandler;
 use App\Application\Consumer\OrderProjectionConsumer;
 use App\Infrastructure\Persistence\PDOOrderProjectionRepository;
+use App\Infrastructure\Persistence\InMemoryOrderEventRepository;
 
 class ProjectionFlowTest extends TestCase
 {
@@ -31,15 +32,16 @@ class ProjectionFlowTest extends TestCase
     public function test_projection_is_updated_after_event(): void
     {
         $repository = new PDOOrderProjectionRepository($this->pdo);
-
         $handler = new UpdateOrderProjectionHandler($repository);
+        $eventRepository = new InMemoryOrderEventRepository();
 
-        $consumer = new OrderProjectionConsumer($handler);
+        $consumer = new OrderProjectionConsumer($handler, $eventRepository);
 
         $event = [
             'order_id' => 'order-test-1',
             'customer_id' => 10,
-            'total' => 150.00
+            'total' => 150.00,
+            'status' => 'received' // obrigatório
         ];
 
         $consumer->consume($event);

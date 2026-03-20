@@ -9,19 +9,24 @@ use App\Domain\Exception\OrderNotFoundException;
 use App\Domain\Exception\InvalidOrderStateException;
 use App\Domain\Entity\Order;
 use App\Domain\Enum\OrderStatus;
+use App\Infrastructure\Persistence\InMemoryOrderEventRepository;
 
 class FailOrderUseCaseTest extends TestCase
 {
     public function test_it_fails_an_order_in_processing_state(): void
     {
         $repository = new InMemoryOrderRepository();
+        $eventRepository = new InMemoryOrderEventRepository();
 
         $order = Order::create(1234, 100.0);
         $order->markProcessing();
 
         $repository->save($order);
 
-        $useCase = new FailOrderUseCase($repository);
+        $useCase = new FailOrderUseCase(
+            $repository,
+            $eventRepository
+        );
         $useCase->execute($order->getId());
 
         $failedOrder = $repository->findById($order->getId());
@@ -34,8 +39,13 @@ class FailOrderUseCaseTest extends TestCase
         $this->expectException(OrderNotFoundException::class);
 
         $repository = new InMemoryOrderRepository();
+        $eventRepository = new InMemoryOrderEventRepository();
 
-        $useCase = new FailOrderUseCase($repository);
+        $useCase = new FailOrderUseCase(
+            $repository,
+            $eventRepository
+        );
+
         $useCase->execute('non-existing-id');
     }
 
@@ -44,12 +54,17 @@ class FailOrderUseCaseTest extends TestCase
         $this->expectException(InvalidOrderStateException::class);
 
         $repository = new InMemoryOrderRepository();
+        $eventRepository = new InMemoryOrderEventRepository();
 
         $order = Order::create(1234, 100.0);
         // estado RECEIVED
         $repository->save($order);
 
-        $useCase = new FailOrderUseCase($repository);
+        $useCase = new FailOrderUseCase(
+            $repository,
+            $eventRepository
+        );
+        
         $useCase->execute($order->getId());
     }
 

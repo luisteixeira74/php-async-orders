@@ -10,6 +10,7 @@ use App\Infrastructure\Persistence\InMemoryOrderRepository;
 use PHPUnit\Framework\TestCase;
 use App\Application\Listener\PublishOrderToQueueListener;
 use App\Domain\Event\OrderReceived;
+use App\Infrastructure\Persistence\InMemoryOrderEventRepository;
 
 class CreateOrderUseCaseTest extends TestCase
 {
@@ -18,7 +19,8 @@ class CreateOrderUseCaseTest extends TestCase
         // Arrange
         $orderRepository = new InMemoryOrderRepository();
         $queuePublisher = new InMemoryQueuePublisher();
-        
+        $orderEventRepository = new InMemoryOrderEventRepository();
+
         $eventDispatcher  = new SimpleEventDispatcher();
         $eventDispatcher->listen(
             OrderReceived::class,
@@ -27,7 +29,8 @@ class CreateOrderUseCaseTest extends TestCase
 
         $useCase = new CreateOrderUseCase(
             $orderRepository,
-            $eventDispatcher
+            $eventDispatcher,
+            $orderEventRepository
         );
 
         // Act
@@ -51,16 +54,23 @@ class CreateOrderUseCaseTest extends TestCase
 
         $this->assertEquals('orders.received', $message['topic']);
         $this->assertEquals($orderId, $message['payload']['order_id']);
+
+        $events = $orderEventRepository->findByOrderId($orderId);
+
+        $this->assertCount(1, $events);
+        $this->assertEquals('received', $events[0]['event_type']);
     }
     
     public function test_multiple_orders_generate_unique_ids(): void
     {
         $orderRepository = new InMemoryOrderRepository();
         $eventDispatcher  = new SimpleEventDispatcher();
+        $orderEventRepository = new InMemoryOrderEventRepository();
 
         $useCase = new CreateOrderUseCase(
             $orderRepository,
-            $eventDispatcher
+            $eventDispatcher,
+            $orderEventRepository
         );
 
         $id1 = $useCase->execute(1, 100.0);

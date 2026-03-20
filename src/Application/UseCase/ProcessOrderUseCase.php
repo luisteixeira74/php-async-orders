@@ -6,17 +6,16 @@ use App\Domain\Repository\OrderRepository;
 use App\Domain\Exception\OrderNotFoundException;
 use App\Application\Event\EventDispatcherInterface;
 use App\Domain\Event\OrderProcessed;
+use App\Domain\Repository\OrderEventRepository;
 
 class ProcessOrderUseCase
 {
     public function __construct(
         private OrderRepository $orderRepository,
-        private EventDispatcherInterface $eventDispatcher
+        private EventDispatcherInterface $eventDispatcher,
+        private OrderEventRepository $eventRepository
     ) {}
 
-    /**
-     * Processa uma order específica pelo ID
-     */
     public function execute(string $orderId): void
     {
         $order = $this->orderRepository->findById($orderId);
@@ -25,8 +24,13 @@ class ProcessOrderUseCase
             throw new OrderNotFoundException();
         }
 
+        // passo 1
         $order->markProcessing();
+        $this->eventRepository->save($order->getId(), 'processing');
+
+        // passo 2
         $order->markProcessed();
+        $this->eventRepository->save($order->getId(), 'processed');
 
         $this->orderRepository->save($order);
 
@@ -39,14 +43,8 @@ class ProcessOrderUseCase
         );
     }
 
-    /**
-     * Retorna todas as orders pendentes (status ainda não processadas)
-     *
-     * @return array<int, \App\Domain\Entity\Order>
-     */
     public function getPendingOrders(): array
     {
-        // Delegamos para o repository buscar todas as orders com status "created"
         return $this->orderRepository->findByStatus('received');
     }
 }

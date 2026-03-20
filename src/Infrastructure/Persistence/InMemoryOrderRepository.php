@@ -18,4 +18,9 @@ class InMemoryOrderRepository implements OrderRepository
     {
         return $this->orders[$id] ?? null;
     }
+
+    public function findByStatus(string $status): array
+    {
+        return array_filter($this->orders, fn(Order $order) => $order->getStatus()->value === $status);
+    }
 }

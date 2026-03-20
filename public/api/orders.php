@@ -11,6 +11,7 @@ header('Content-Type: application/json');
 try {
     $pdo = ConnectionFactory::create();
 
+    // Busca orders (projection)
     $stmt = $pdo->query("
         SELECT 
             order_id,
@@ -23,6 +24,25 @@ try {
     ");
 
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Prepara query de eventos (reutilizável)
+    $eventStmt = $pdo->prepare("
+        SELECT 
+            event_type,
+            created_at
+        FROM order_events
+        WHERE order_id = :order_id
+        ORDER BY created_at ASC
+    ");
+
+    // Enriquece cada order com eventos
+    foreach ($orders as &$order) {
+        $eventStmt->execute([
+            ':order_id' => $order['order_id']
+        ]);
+
+        $order['events'] = $eventStmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     echo json_encode($orders);
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application;
 
 use App\Application\Event\EventDispatcherInterface;
@@ -10,9 +12,12 @@ use App\Application\UseCase\CreateOrderUseCase;
 use App\Application\UseCase\ProcessOrderUseCase;
 use App\Application\UseCase\FailOrderUseCase;
 use App\Domain\Repository\OrderRepository;
+use App\Domain\Repository\OrderEventRepository;
 use App\Infrastructure\Persistence\PDOOrderRepository;
+use App\Infrastructure\Persistence\PDOOrderEventRepository;
 use App\Infrastructure\Persistence\ConnectionFactory;
 use App\Infrastructure\Persistence\InMemoryOrderRepository;
+use App\Infrastructure\Persistence\InMemoryOrderEventRepository;
 use App\Infrastructure\Messaging\QueuePublisher;
 use App\Infrastructure\Messaging\InMemoryQueuePublisher;
 use App\Application\Projection\UpdateOrderProjectionHandler;
@@ -23,22 +28,19 @@ use Dotenv\Dotenv;
 class Bootstrap
 {
     private OrderRepository $orderRepository;
+    private OrderEventRepository $orderEventRepository;
     private QueuePublisher $queuePublisher;
     private EventDispatcherInterface $eventDispatcher;
     private ?\PDO $pdo = null;
 
     public function __construct(private string $environment = 'dev')
     {
-        $root = dirname(__DIR__, 2);
-        $dotenv = Dotenv::createMutable($root);
-        $dotenv->load();
-
-        $this->initialize(); // ⚡ inicializa orderRepository, queuePublisher e dispatcher
+        $this->loadEnv(); // variáveis de ambiente
+        $this->initialize(); // inicializa publishers, repositories e dispatcher
     }
 
     private function loadEnv(): void
     {
-        // Caminho absoluto para a raiz do projeto
         $root = dirname(__DIR__, 2);
 
         if (!file_exists($root . '/.env')) {
@@ -53,24 +55,25 @@ class Bootstrap
     {
         echo "Inicializando aplicação no ambiente: {$this->environment}\n";
 
-        // Inicializa Publisher
+        // Publisher
         $this->queuePublisher = new InMemoryQueuePublisher();
 
-        // Inicializa repositório
+        // Repositories
         if ($this->environment === 'prod') {
             $this->orderRepository = new PDOOrderRepository($this->getConnection());
+            $this->orderEventRepository = new PDOOrderEventRepository($this->getConnection());
         } else {
             $this->orderRepository = new InMemoryOrderRepository();
+            $this->orderEventRepository = new InMemoryOrderEventRepository();
         }
 
-        // Inicializa Event Dispatcher
+        // Dispatcher (usa publisher → precisa vir depois)
         $this->initializeEventDispatcher();
     }
 
     private function initializeEventDispatcher(): void
     {
         $dispatcher = new SimpleEventDispatcher();
-
         $dispatcher->listen(
             OrderReceived::class,
             new PublishOrderToQueueListener($this->queuePublisher)
@@ -88,7 +91,9 @@ class Bootstrap
         return $this->pdo;
     }
 
-    public function orderRepository()
+    // --- Getters / factories ---
+
+    public function orderRepository(): OrderRepository
     {
         return $this->orderRepository;
     }
@@ -97,7 +102,8 @@ class Bootstrap
     {
         return new CreateOrderUseCase(
             $this->orderRepository,
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            $this->orderEventRepository
         );
     }
 
@@ -105,20 +111,22 @@ class Bootstrap
     {
         return new ProcessOrderUseCase(
             $this->orderRepository,
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            $this->orderEventRepository
         );
     }
 
     public function failOrderUseCase(): FailOrderUseCase
     {
         return new FailOrderUseCase(
-            $this->orderRepository
+            $this->orderRepository,
+            $this->orderEventRepository
         );
     }
 
     public function updateOrderProjectionHandler(): UpdateOrderProjectionHandler
     {
-        $pdo = $this->getConnection(); // Reutiliza a conexão
+        $pdo = $this->getConnection();
         $projectionRepository = new PDOOrderProjectionRepository($pdo);
         return new UpdateOrderProjectionHandler($projectionRepository);
     }
