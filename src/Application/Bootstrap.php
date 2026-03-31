@@ -6,38 +6,27 @@ namespace App\Application;
 
 use App\Application\Event\EventDispatcherInterface;
 use App\Application\Event\SimpleEventDispatcher;
-use App\Application\Listener\PublishOrderToQueueListener;
-use App\Domain\Event\OrderReceived;
-use App\Application\UseCase\CreateOrderUseCase;
-use App\Application\UseCase\ProcessOrderUseCase;
-use App\Application\UseCase\FailOrderUseCase;
-use App\Domain\Repository\OrderRepository;
-use App\Domain\Repository\OrderEventRepository;
-use App\Infrastructure\Persistence\PDOOrderRepository;
-use App\Infrastructure\Persistence\PDOOrderEventRepository;
-use App\Infrastructure\Persistence\ConnectionFactory;
-use App\Infrastructure\Persistence\InMemoryOrderRepository;
-use App\Infrastructure\Persistence\InMemoryOrderEventRepository;
+use App\Application\Listener\PublishOrderToQueueListener; // pode renomear depois
+use App\Domain\Event\LeadReceived;
+use App\Application\UseCase\CreateLeadUseCase;
+use App\Domain\Repository\LeadRepository;
+use App\Infrastructure\Persistence\InMemoryLeadRepository;
 use App\Infrastructure\Messaging\QueuePublisher;
 use App\Infrastructure\Messaging\InMemoryQueuePublisher;
-use App\Application\Projection\UpdateOrderProjectionHandler;
-use App\Infrastructure\Persistence\PDOOrderProjectionRepository;
 use App\Infrastructure\Messaging\RabbitMQQueuePublisher;
 
 use Dotenv\Dotenv;
 
 class Bootstrap
 {
-    private OrderRepository $orderRepository;
-    private OrderEventRepository $orderEventRepository;
+    private LeadRepository $leadRepository;
     private QueuePublisher $queuePublisher;
     private EventDispatcherInterface $eventDispatcher;
-    private ?\PDO $pdo = null;
 
     public function __construct(private string $environment = 'dev')
     {
-        $this->loadEnv(); // variáveis de ambiente
-        $this->initialize(); // inicializa publishers, repositories e dispatcher
+        $this->loadEnv();
+        $this->initialize();
     }
 
     private function loadEnv(): void
@@ -48,12 +37,11 @@ class Bootstrap
             $dotenv = Dotenv::createImmutable($root);
             $dotenv->load();
         } else {
-            // fallback inteligente
             if ($this->environment === 'dev') {
                 throw new \RuntimeException("Arquivo .env não encontrado na raiz do projeto ($root)");
             }
-            // Em CI ou prod, não temos .env → usar getenv() ou defaults
-            echo "[Bootstrap] .env não encontrado, usando variáveis do ambiente ou defaults\n";
+
+            echo "[Bootstrap] .env não encontrado, usando variáveis do ambiente\n";
         }
     }
 
@@ -61,6 +49,7 @@ class Bootstrap
     {
         echo "Inicializando aplicação no ambiente: {$this->environment}\n";
 
+        // 🔥 Infra simplificada
         if ($this->environment === 'prod') {
             $this->queuePublisher = new RabbitMQQueuePublisher(
                 getenv('RABBITMQ_HOST') ?: 'rabbitmq',
@@ -68,75 +57,43 @@ class Bootstrap
                 getenv('RABBITMQ_USER') ?: 'guest',
                 getenv('RABBITMQ_PASS') ?: 'guest'
             );
-
-            $this->orderRepository = new PDOOrderRepository($this->getConnection());
-            $this->orderEventRepository = new PDOOrderEventRepository($this->getConnection());
         } else {
-            $this->orderRepository = new InMemoryOrderRepository();
-            $this->orderEventRepository = new InMemoryOrderEventRepository();
             $this->queuePublisher = new InMemoryQueuePublisher();
         }
-        
+
+        // 🔥 Repository (simples por enquanto)
+        $this->leadRepository = new InMemoryLeadRepository();
+
         $this->initializeEventDispatcher();
     }
 
     private function initializeEventDispatcher(): void
     {
         $dispatcher = new SimpleEventDispatcher();
+
+        // 🔥 Evento novo (Lead)
         $dispatcher->listen(
-            OrderReceived::class,
+            LeadReceived::class,
             new PublishOrderToQueueListener($this->queuePublisher)
         );
 
         $this->eventDispatcher = $dispatcher;
     }
 
-    public function getConnection(): \PDO
-    {
-        if ($this->pdo === null) {
-            $this->pdo = ConnectionFactory::create();
-        }
+    // =========================
+    // GETTERS
+    // =========================
 
-        return $this->pdo;
+    public function leadRepository(): LeadRepository
+    {
+        return $this->leadRepository;
     }
 
-    // --- Getters / factories ---
-
-    public function orderRepository(): OrderRepository
+    public function createLeadUseCase(): CreateLeadUseCase
     {
-        return $this->orderRepository;
-    }
-
-    public function createOrderUseCase(): CreateOrderUseCase
-    {
-        return new CreateOrderUseCase(
-            $this->orderRepository,
-            $this->eventDispatcher,
-            $this->orderEventRepository
+        return new CreateLeadUseCase(
+            $this->leadRepository,
+            $this->eventDispatcher
         );
-    }
-
-    public function processOrderUseCase(): ProcessOrderUseCase
-    {
-        return new ProcessOrderUseCase(
-            $this->orderRepository,
-            $this->eventDispatcher,
-            $this->orderEventRepository
-        );
-    }
-
-    public function failOrderUseCase(): FailOrderUseCase
-    {
-        return new FailOrderUseCase(
-            $this->orderRepository,
-            $this->orderEventRepository
-        );
-    }
-
-    public function updateOrderProjectionHandler(): UpdateOrderProjectionHandler
-    {
-        $pdo = $this->getConnection();
-        $projectionRepository = new PDOOrderProjectionRepository($pdo);
-        return new UpdateOrderProjectionHandler($projectionRepository);
     }
 }
