@@ -14,6 +14,7 @@ use App\Infrastructure\Persistence\InMemoryLeadRepository;
 use App\Infrastructure\Messaging\QueuePublisher;
 use App\Infrastructure\Messaging\InMemoryQueuePublisher;
 use App\Infrastructure\Messaging\RabbitMQQueuePublisher;
+use App\Application\Validation\LeadValidator;
 
 use Dotenv\Dotenv;
 
@@ -22,6 +23,7 @@ class Bootstrap
     private LeadRepository $leadRepository;
     private QueuePublisher $queuePublisher;
     private EventDispatcherInterface $eventDispatcher;
+    private LeadValidator $leadValidator;
 
     public function __construct(private string $environment = 'dev')
     {
@@ -93,7 +95,8 @@ class Bootstrap
     {
         return new CreateLeadUseCase(
             $this->leadRepository,
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            $this->leadValidator
         );
     }
 }
