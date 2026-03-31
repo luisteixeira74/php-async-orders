@@ -4,5 +4,5 @@ namespace App\Infrastructure\Messaging;
 
 interface QueuePublisher
 {
-    public function publish(string $topic, array $payload): void;
+    public function publish(object $event): void;
 }

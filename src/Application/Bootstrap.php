@@ -22,6 +22,7 @@ use App\Infrastructure\Messaging\QueuePublisher;
 use App\Infrastructure\Messaging\InMemoryQueuePublisher;
 use App\Application\Projection\UpdateOrderProjectionHandler;
 use App\Infrastructure\Persistence\PDOOrderProjectionRepository;
+use App\Infrastructure\Messaging\RabbitMQQueuePublisher;
 
 use Dotenv\Dotenv;
 
@@ -60,20 +61,22 @@ class Bootstrap
     {
         echo "Inicializando aplicação no ambiente: {$this->environment}\n";
 
-        // Publisher
-        $this->queuePublisher = new InMemoryQueuePublisher();
-
         if ($this->environment === 'prod') {
+            $this->queuePublisher = new RabbitMQQueuePublisher(
+                getenv('RABBITMQ_HOST') ?: 'rabbitmq',
+                (int) getenv('RABBITMQ_PORT') ?: 5672,
+                getenv('RABBITMQ_USER') ?: 'guest',
+                getenv('RABBITMQ_PASS') ?: 'guest'
+            );
+
             $this->orderRepository = new PDOOrderRepository($this->getConnection());
             $this->orderEventRepository = new PDOOrderEventRepository($this->getConnection());
-            $this->queuePublisher = new QueuePublisher(); // real, tipo Redis
         } else {
             $this->orderRepository = new InMemoryOrderRepository();
             $this->orderEventRepository = new InMemoryOrderEventRepository();
             $this->queuePublisher = new InMemoryQueuePublisher();
         }
-
-        // Dispatcher (usa publisher → precisa vir depois)
+        
         $this->initializeEventDispatcher();
     }
 

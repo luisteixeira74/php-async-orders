@@ -34,6 +34,7 @@ final class OrderReceived implements DomainEvent
             'order_id' => $this->orderId,
             'customer_id' => $this->customerId,
             'total' => $this->total,
+            'occurred_on' => $this->occurredOn->format(DATE_ATOM),
         ];
     }
 

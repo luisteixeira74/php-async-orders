@@ -13,9 +13,6 @@ class PublishOrderToQueueListener
 
     public function __invoke(OrderReceived $event): void
     {
-        $this->queuePublisher->publish(
-            $event->eventName(), // topic
-            $event->toArray() // payload
-        );
+        $this->queuePublisher->publish($event);
     }
 }
