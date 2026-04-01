@@ -15,6 +15,12 @@ use App\Infrastructure\Messaging\QueuePublisher;
 use App\Infrastructure\Messaging\InMemoryQueuePublisher;
 use App\Infrastructure\Messaging\RabbitMQQueuePublisher;
 use App\Application\Validation\LeadValidator;
+use App\Application\UseCase\ProcessLeadUseCase;
+use App\Application\AI\AIProvider;
+
+use App\Infrastructure\AI\FakeAIProvider;
+use App\Infrastructure\AI\OpenAIProvider;
+use App\Application\Listener\PublishLeadToQueueListener;
 
 use Dotenv\Dotenv;
 
@@ -24,6 +30,7 @@ class Bootstrap
     private QueuePublisher $queuePublisher;
     private EventDispatcherInterface $eventDispatcher;
     private LeadValidator $leadValidator;
+    private AIProvider $aiProvider;
 
     public function __construct(private string $environment = 'dev')
     {
@@ -51,21 +58,38 @@ class Bootstrap
     {
         echo "Inicializando aplicação no ambiente: {$this->environment}\n";
 
-        // 🔥 Infra simplificada
+        // =========================
+        // QUEUE
+        // =========================
         if ($this->environment === 'prod') {
             $this->queuePublisher = new RabbitMQQueuePublisher(
                 getenv('RABBITMQ_HOST') ?: 'rabbitmq',
                 (int) getenv('RABBITMQ_PORT') ?: 5672,
                 getenv('RABBITMQ_USER') ?: 'guest',
-                getenv('RABBITMQ_PASS') ?: 'guest'
+                getenv('RABBITMQ_PASSWORD') ?: 'guest'
             );
         } else {
             $this->queuePublisher = new InMemoryQueuePublisher();
         }
 
-        // 🔥 Repository (simples por enquanto)
+        // =========================
+        // REPOSITORY
+        // =========================
         $this->leadRepository = new InMemoryLeadRepository();
 
+        // =========================
+        // VALIDATOR
+        // =========================
+        $this->leadValidator = new LeadValidator();
+
+        // =========================
+        // AI PROVIDER
+        // =========================
+        $this->initializeAIProvider();
+
+        // =========================
+        // EVENTS
+        // =========================
         $this->initializeEventDispatcher();
     }
 
@@ -73,13 +97,26 @@ class Bootstrap
     {
         $dispatcher = new SimpleEventDispatcher();
 
-        // 🔥 Evento novo (Lead)
         $dispatcher->listen(
             LeadReceived::class,
-            new PublishOrderToQueueListener($this->queuePublisher)
+            new PublishLeadToQueueListener($this->queuePublisher)
         );
 
         $this->eventDispatcher = $dispatcher;
+    }
+
+    private function initializeAIProvider(): void
+    {
+        $provider = getenv('AI_PROVIDER') ?: 'fake';
+
+        if ($provider === 'openai') {
+            $this->aiProvider = new OpenAIProvider(
+                getenv('OPENAI_API_KEY') ?: '',
+                getenv('OPENAI_MODEL') ?: 'gpt-4o-mini'
+            );
+        } else {
+            $this->aiProvider = new FakeAIProvider();
+        }
     }
 
     // =========================
@@ -97,6 +134,14 @@ class Bootstrap
             $this->leadRepository,
             $this->eventDispatcher,
             $this->leadValidator
+        );
+    }
+
+    public function processLeadUseCase(): ProcessLeadUseCase
+    {
+        return new ProcessLeadUseCase(
+            $this->leadRepository,
+            $this->aiProvider
         );
     }
 }

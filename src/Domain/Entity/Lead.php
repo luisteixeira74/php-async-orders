@@ -15,9 +15,11 @@ class Lead
     private DateTimeImmutable $createdAt;
 
     // resultado da IA (enriquecimento)
-    private ?string $category = null;
+    private ?string $intent = null;
     private ?string $priority = null;
     private ?float $score = null;
+    private ?string $suggestedAction = null;
+    
 
     private array $domainEvents = [];
 
@@ -53,11 +55,22 @@ class Lead
         return $lead;
     }
 
+    public function classify(
+        string $intent,
+        string $priority,
+        float $score,
+        string $suggestedAction
+    ): void {
+        $this->intent = $intent;
+        $this->priority = $priority;
+        $this->score = $score;
+        $this->suggestedAction = $suggestedAction;
+    }
+
     public static function rehydrate(
         string $id,
         string $name,
         string $message,
-        ?string $category,
         ?string $priority,
         ?float $score,
         DateTimeImmutable $createdAt
@@ -69,7 +82,6 @@ class Lead
             createdAt: $createdAt
         );
 
-        $lead->category = $category;
         $lead->priority = $priority;
         $lead->score = $score;
 
@@ -100,11 +112,6 @@ class Lead
         return $this->createdAt;
     }
 
-    public function getCategory(): ?string
-    {
-        return $this->category;
-    }
-
     public function getPriority(): ?string
     {
         return $this->priority;
@@ -124,7 +131,6 @@ class Lead
         string $priority,
         float $score
     ): void {
-        $this->category = $category;
         $this->priority = $priority;
         $this->score = $score;
     }
